@@ -130,6 +130,7 @@ help(){line(`<span class="sec">AVAILABLE COMMANDS</span>
   <span class="c">awards</span>       recognition
   <span class="c">neofetch</span>     system info, the fun way
   <span class="c">chat</span>         message me directly (type exit to leave)
+  <span class="c">jhals</span>        restricted · J only
   <span class="c">contact</span>      get in touch
   <span class="c">scan</span>         run a (harmless) threat hunt
   <span class="c">clear</span>        wipe the screen
@@ -326,7 +327,7 @@ inp.addEventListener('keydown',async e=>{
   if(e.key==='Enter'&&!busy){const v=inp.value;inp.value='';if(dobMode){if(v.trim())await dobCheck(v)}else if(chatMode){if(v.trim())await chatSend(v)}else await run(v)}
   else if(e.key==='ArrowUp'){if(hi>0){hi--;inp.value=hist[hi]}e.preventDefault()}
   else if(e.key==='ArrowDown'){if(hi<hist.length-1){hi++;inp.value=hist[hi]}else{hi=hist.length;inp.value=''}e.preventDefault()}
-  else if(e.key==='Tab'){e.preventDefault();const m=Object.keys(C).filter(c=>c!=='jhals'&&c.startsWith(inp.value.toLowerCase()));if(m.length===1)inp.value=m[0];else if(m.length)line('<span class="m">'+m.join('  ')+'</span>')}
+  else if(e.key==='Tab'){e.preventDefault();const m=Object.keys(C).filter(c=>c.startsWith(inp.value.toLowerCase()));if(m.length===1)inp.value=m[0];else if(m.length)line('<span class="m">'+m.join('  ')+'</span>')}
 });
 document.querySelector('.win').addEventListener('click',e=>{if(!e.target.closest('a,.chip')&&!window.getSelection().toString())inp.focus()});
 const chips=document.getElementById('chips');
