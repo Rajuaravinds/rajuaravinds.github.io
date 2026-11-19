@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aravind Sankar — Cybersecurity Analyst L3, Detection &amp; Response</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#05080a; --panel:#0a1014; --green:#39ff88; --dim:#1f8a52; --cyan:#4fd8ff;
+  --amber:#ffb547; --red:#ff5468; --text:#c9f5dc; --muted:#6b8f7c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:14px;overflow:hidden}
+canvas#rain{position:fixed;inset:0;z-index:0;opacity:.13}
+.crt::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:5;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.25) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
+.wrap{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;max-width:980px;margin:0 auto;padding:18px}
+.win{flex:1;display:flex;flex-direction:column;border:1px solid #163b28;border-radius:10px;background:rgba(8,14,18,.88);
+  box-shadow:0 0 0 1px rgba(57,255,136,.05),0 0 40px rgba(57,255,136,.08);overflow:hidden;min-height:0}
+.bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid #163b28;background:#071009}
+.dot{width:11px;height:11px;border-radius:50%}
+.bar .t{flex:1;text-align:center;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status{display:flex;gap:14px;font-size:11px;color:var(--muted);padding:6px 14px;border-bottom:1px solid #102a1c;flex-wrap:wrap}
+.status b{color:var(--green);font-weight:600}
+.blink{animation:bl 1s steps(1) infinite}@keyframes bl{50%{opacity:0}}
+#out{flex:1;overflow-y:auto;padding:16px 16px 6px;line-height:1.55;min-height:0;scrollbar-width:thin;scrollbar-color:#1f8a52 transparent}
+#out .line{white-space:pre-wrap;word-break:break-word}
+.p{color:var(--green)} .c{color:var(--cyan)} .a{color:var(--amber)} .r{color:var(--red)} .m{color:var(--muted)} .w{color:#fff}
+.glow{text-shadow:0 0 8px rgba(57,255,136,.6)}
+.banner{color:var(--green);font-weight:800;line-height:1.05;white-space:pre!important;overflow:hidden;font-size:clamp(2px,calc((min(100vw,980px) - 80px) / 86.0),12px);text-shadow:0 0 10px rgba(57,255,136,.45)}
+.sec{margin:6px 0 4px;color:var(--amber)}
+.bar-skill{display:inline-block;color:var(--green)}
+a{color:var(--cyan);text-decoration:none;border-bottom:1px dashed var(--cyan)}
+a:hover{color:#fff}
+.inrow{display:flex;align-items:center;gap:8px;padding:10px 16px 12px;border-top:1px solid #102a1c}
+.inrow .ps{color:var(--green);white-space:nowrap}
+#cmd{flex:1;background:transparent;border:0;outline:0;color:#fff;font:inherit;caret-color:var(--green)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 16px 14px}
+.chip{background:#0b1a12;border:1px solid #1f5a3a;color:var(--green);font:inherit;font-size:12px;padding:5px 10px;border-radius:6px;cursor:pointer}
+.chip:hover{background:#123222;box-shadow:0 0 10px rgba(57,255,136,.25)}
+.card{border:1px solid #1d4a32;border-left:3px solid var(--green);padding:8px 12px;margin:6px 0;border-radius:4px;background:rgba(57,255,136,.03)}
+.alert{border-left-color:var(--red);background:rgba(255,84,104,.05)}
+.tag{display:inline-block;border:1px solid #275a40;color:var(--cyan);padding:0 6px;border-radius:3px;margin:2px 4px 2px 0;font-size:12px}
+@media (max-width:600px){html,body{font-size:12.5px}.wrap{padding:8px}.status{display:none}}
+</style>
+</head>
+<body class="crt">
+<canvas id="rain"></canvas>
+<div class="wrap">
+  <div class="win">
+    <div class="bar">
+      <span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span>
+      <span class="t">aravind@soc: ~ — zsh — 120×40</span>
+    </div>
+    <div class="status">
+      <span>SIEM: <b>ONLINE</b></span><span>DETECTIONS: <b id="det">0</b></span><span>THREAT LEVEL: <b style="color:var(--amber)">GUARDED</b></span><span>LOC: <b>Ireland</b></span><span id="clock"></span>
+    </div>
+    <div id="out"></div>
+    <div class="chips" id="chips"></div>
+    <div class="inrow">
+      <span class="ps">aravind@soc:~$</span>
+      <input id="cmd" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Terminal command" placeholder="type 'help' and press enter">
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- matrix rain ---------- */
+const cv=document.getElementById('rain'),cx=cv.getContext('2d');let cols,drops;
+function rs(){cv.width=innerWidth;cv.height=innerHeight;cols=Math.floor(cv.width/14);drops=Array(cols).fill(0).map(()=>Math.random()*-50)}
+rs();addEventListener('resize',rs);
+const glyphs='01アイウエオカキクケコサシスセソ<>/{}[]#$%SPLCQLKQL';
+setInterval(()=>{cx.fillStyle='rgba(5,8,10,.12)';cx.fillRect(0,0,cv.width,cv.height);cx.fillStyle='#39ff88';cx.font='13px JetBrains Mono';
+ drops.forEach((y,i)=>{cx.fillText(glyphs[Math.random()*glyphs.length|0],i*14,y*14);drops[i]=(y*14>cv.height&&Math.random()>.975)?0:y+1})},55);
+
+/* ---------- clock + detection counter ---------- */
+setInterval(()=>{document.getElementById('clock').textContent='UTC '+new Date().toISOString().slice(11,19)},1000);
+let det=0;setInterval(()=>{det+=Math.floor(Math.random()*3);document.getElementById('det').textContent=det.toLocaleString()},1400);
+
+/* ---------- terminal ---------- */
+const out=document.getElementById('out'),inp=document.getElementById('cmd');
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+let busy=false,hist=[],hi=-1;
+function line(html,cls=''){const d=document.createElement('div');d.className='line '+cls;d.innerHTML=html;out.appendChild(d);out.scrollTop=out.scrollHeight;return d}
+async function type(html,speed=12,cls=''){const d=line('',cls);const tmp=document.createElement('div');tmp.innerHTML=html;const txt=tmp.textContent;
+  for(let i=0;i<=txt.length;i+=2){d.textContent=txt.slice(0,i);out.scrollTop=out.scrollHeight;await sleep(speed)}d.innerHTML=html}
+const bar=(n)=>'<span class="bar-skill">'+'█'.repeat(n)+'</span><span class="m">'+'░'.repeat(20-n)+'</span>';
+
+const BANNER=`
+██████╗  █████╗      ██╗██╗   ██╗ █████╗ ██████╗  █████╗ ██╗   ██╗██╗███╗   ██╗██████╗     ███████╗ █████╗ ███╗   ██╗██╗  ██╗ █████╗ ██████╗
+██╔══██╗██╔══██╗     ██║██║   ██║██╔══██╗██╔══██╗██╔══██╗██║   ██║██║████╗  ██║██╔══██╗    ██╔════╝██╔══██╗████╗  ██║██║ ██╔╝██╔══██╗██╔══██╗
+██████╔╝███████║     ██║██║   ██║███████║██████╔╝███████║██║   ██║██║██╔██╗ ██║██║  ██║    ███████╗███████║██╔██╗ ██║█████╔╝ ███████║██████╔╝
+██╔══██╗██╔══██║██   ██║██║   ██║██╔══██║██╔══██╗██╔══██║╚██╗ ██╔╝██║██║╚██╗██║██║  ██║    ╚════██║██╔══██║██║╚██╗██║██╔═██╗ ██╔══██║██╔══██╗
+██║  ██║██║  ██║╚█████╔╝╚██████╔╝██║  ██║██║  ██║██║  ██║ ╚████╔╝ ██║██║ ╚████║██████╔╝    ███████║██║  ██║██║ ╚████║██║  ██╗██║  ██║██║  ██║
+╚═╝  ╚═╝╚═╝  ╚═╝ ╚════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  ╚═╝╚═╝  ╚═══╝╚═════╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝`;
+
+const C={
+help(){line(`<span class="sec">AVAILABLE COMMANDS</span>
+  <span class="c">whoami</span>       who is behind the console
+  <span class="c">about</span>        short bio
+  <span class="c">skills</span>       stack &amp; proficiency
+  <span class="c">experience</span>   where I work
+  <span class="c">projects</span>     things I've built
+  <span class="c">certs</span>        certifications
+  <span class="c">education</span>    degrees
+  <span class="c">awards</span>       recognition
+  <span class="c">neofetch</span>     system info, the fun way
+  <span class="c">chat</span>         message me directly (type exit to leave)
+  <span class="c">contact</span>      get in touch
+  <span class="c">scan</span>         run a (harmless) threat hunt
+  <span class="c">clear</span>        wipe the screen
+<span class="m">tip: ↑/↓ for history, Tab to autocomplete</span>`)},
+whoami(){line(`<span class="w glow">Rajuaravind Sankar</span> <span class="m">aka</span> <span class="p">Aravind</span>
+<span class="p">Cybersecurity Analyst L3 — Detection &amp; Response</span> @ EirGrid · Ireland
+<span class="m">────────────────────────────────────────</span>
+  <span class="a">3.2+</span> yrs in security ops   <span class="a">200+</span> use cases built   <span class="a">-70%</span> false positives`)},
+about(){line(`<div class="card">Cybersecurity practitioner with 3.2+ years across security operations,
+incident investigation, detection engineering, threat hunting and monitoring.
+
+I work hands-on with <span class="c">Splunk Enterprise</span>, <span class="c">Microsoft Sentinel</span> and
+<span class="c">CrowdStrike Next-Gen SIEM</span> — building and tuning detection use cases,
+integrating threat intel, automating reporting and creating dashboards that
+make a SOC faster and sharper. Grounded in <span class="c">MITRE ATT&amp;CK</span>, <span class="c">NIST</span> and <span class="c">CIS</span>.
+
+Originally from Chennai, now based in Ireland. 🏆 TCS Rising Star Award, Nov 2025.</div>`)},
+skills(){line(`<span class="sec">// SIEM &amp; SECURITY PLATFORMS</span>
+  Splunk (SPL, admin, apps)     ${bar(19)}
+  CrowdStrike Falcon NG-SIEM    ${bar(17)}
+  Microsoft Sentinel            ${bar(15)}
+  Defender XDR                  ${bar(14)}
+  Cribl Stream                  ${bar(13)}
+<span class="sec">// Detection &amp; Monitoring</span>
+  <span class="tag">Detection Engineering</span><span class="tag">Use Case Development</span><span class="tag">Alert Tuning</span><span class="tag">False Positive Reduction</span><span class="tag">Splunk MLTK / UEBA</span>
+<span class="sec">// Threat Hunting &amp; Intel</span>
+  <span class="tag">Proactive Hunting</span><span class="tag">IOC Analysis</span><span class="tag">Threat Intel Integration</span><span class="tag">VirusTotal</span>
+<span class="sec">// Incident Response</span>
+  <span class="tag">Alert Triage</span><span class="tag">Investigation</span><span class="tag">Escalation</span><span class="tag">Case Management</span><span class="tag">SLA Configuration</span>
+<span class="sec">// Data &amp; Infrastructure</span>
+  <span class="tag">Parsing &amp; RegEx Extraction</span><span class="tag">Normalisation / CIM</span><span class="tag">Data Routing &amp; Filtering</span><span class="tag">Linux</span><span class="tag">AWS</span><span class="tag">Azure</span><span class="tag">Hybrid / Multi-site</span>
+<span class="sec">// Frameworks</span>
+  <span class="tag">MITRE ATT&amp;CK</span><span class="tag">NIST</span><span class="tag">CIS Controls</span>`)},
+experience(){line(`<div class="card"><span class="w">Cybersecurity Analyst L3 — Detection &amp; Response</span> — <span class="c">EirGrid</span>   <span class="m">Present · Ireland</span>
+ ▸ Senior (L3) detection &amp; response: threat detection, investigation and response
+   for Ireland's electricity transmission system operator</div><div class="card"><span class="w">SOC Engineer</span> — <span class="c">Tata Consultancy Services</span>   <span class="m">Jan 2025 – 2026 · Letterkenny, IE</span>
+ ▸ Designed &amp; optimised <span class="a">200+</span> use cases aligned to ATT&amp;CK, NIST and CIS
+ ▸ Cut false positives by <span class="a">70%</span>, sharpening alert quality across the SOC
+ ▸ Integrated Sentinel and CrowdStrike Falcon with Splunk for unified monitoring
+ ▸ Supported the migration from Splunk ES to CrowdStrike Next-Gen SIEM
+ ▸ Threat-intel correlation with firewall traffic and Falcon IDP rules
+ ▸ Automated alert version control in Splunk + monthly triggered/non-triggered report
+ ▸ Dashboards for TI, data gaps, latency and pipeline health
+ ▸ Third-party data source integrations in NG-SIEM; SOC response plans</div><div class="card"><span class="w">Freelancer</span> — <span class="c">Fiverr</span>   <span class="m">Jun 2024 – Dec 2024</span>
+ ▸ Custom Splunk apps with API integrations for real-time security insights
+ ▸ Breach-data intelligence &amp; exposed-email monitoring tools for clients
+ ▸ High-fidelity detection rules, dashboards and data pipelines</div><div class="card"><span class="w">Junior Analyst</span> — <span class="c">Positka</span>   <span class="m">May 2022 – Aug 2023 · Chennai, IN</span>
+ ▸ Built &amp; managed distributed and standalone Splunk (SHC / indexer clusters)
+ ▸ ML-based detections with Splunk MLTK; VirusTotal TI integration
+ ▸ Custom apps: AWS Bill Monitoring, Transaction Monitoring
+ ▸ DB Connect ingestion, CIM normalisation, RegEx field extraction</div><div class="card"><span class="w">Cybersecurity Trainer</span> — <span class="c">Zybeak Technologies</span>   <span class="m">Apr 2022 – Jul 2022 · Chennai, IN</span>
+ ▸ Taught networking, Linux &amp; Windows fundamentals
+ ▸ Guided learners through TryHackMe and HackTheBox challenges</div>`)},
+education(){line(`<div class="card"><span class="w">MSc Cybersecurity</span> — <span class="c">National College of Ireland</span>, Dublin
+<span class="m">Sep 2023 – Oct 2024</span></div><div class="card"><span class="w">B.Tech Information Technology</span> — <span class="c">St. Joseph's Institute of Technology</span>, Chennai
+<span class="m">Aug 2018 – May 2022</span></div>`)},
+awards(){line(`<span class="a">🏆 The Rising Star Award</span> — Tata Consultancy Services <span class="m">(Nov 2025)</span>`)},
+projects(){line(`<div class="card"><span class="w">mitre_atlas_heatmap</span> <span class="m">— Splunk app</span>
+ Live MITRE ATLAS (AI threat) heatmap for Splunk: pulls STIX data, custom
+ visualisations, colour schemes and a data-refresh script.</div><div class="card"><span class="w">Splunk MCP × Claude</span> <span class="m">— write-up on Medium</span>
+ Wired the Splunk MCP Server into Claude Desktop on Kali Linux and
+ documented the full setup, including credential redaction.</div><div class="card"><span class="w">SOC Executive Dashboard</span> <span class="m">— CrowdStrike NG-SIEM</span>
+ CQL dashboard: detection counts across domains + correlation-rule
+ lifecycle tagging, built alongside an SPL → CQL migration.</div><div class="card"><span class="w">Breach-Intel &amp; Exposed-Email Monitor</span> <span class="m">— freelance</span>
+ Client-facing Splunk tooling that tracks breach data and exposed
+ corporate email addresses, with API-driven, real-time dashboards.</div><div class="card"><span class="w">Coverage Assessment</span> <span class="m">— AD monitoring</span>
+ Event ID 4663 whitelist analysis and ATT&amp;CK coverage % from Splunk.</div>`)},
+certs(){line(`<span class="p">[✔]</span> Certified Ethical Hacker (CEH) <span class="m">— EC-Council</span>
+<span class="p">[✔]</span> Splunk Accredited Cloud and Enterprise Developer <span class="m">— Splunk</span>
+<span class="p">[✔]</span> Splunk Core Certified Power User <span class="m">— Splunk</span>
+<span class="p">[✔]</span> Cribl Certified Observability Engineer (CCOE) Stream User <span class="m">— Cribl</span>
+<span class="p">[✔]</span> CrowdStrike Certified SIEM Expert (CCSE) <span class="m">— CrowdStrike</span>`)},
+neofetch(){line(`<span class="p">      .--.      </span>  <span class="w">aravind</span>@<span class="w">soc</span>
+<span class="p">     |o_o |     </span>  ------------------
+<span class="p">     |:_/ |     </span>  <span class="c">OS</span>: Blue Team Linux x86_64
+<span class="p">    //   \\ \\    </span>  <span class="c">Role</span>: Cyber Analyst L3 @ EirGrid
+<span class="p">   (|     | )   </span>  <span class="c">Shell</span>: SPL · CQL · KQL
+<span class="p">  /'\\_   _/\`\\   </span>  <span class="c">Uptime</span>: 24/7 (on-call vibes)
+<span class="p">  \\___)=(___/   </span>  <span class="c">Langs</span>: English, Tamil
+                   <span class="c">Location</span>: Ireland
+                   <span class="c">Fuel</span>: coffee + alerts
+                   <span style="background:#ff5468">   </span><span style="background:#ffb547">   </span><span style="background:#39ff88">   </span><span style="background:#4fd8ff">   </span><span style="background:#a87bff">   </span>`)},
+contact(){line(`<span class="sec">OPEN CHANNELS</span>
+  <span class="c">linkedin</span>  → <a href="https://www.linkedin.com/in/rajuaravind/" target="_blank" rel="noopener">linkedin.com/in/rajuaravind</a>
+  <span class="c">email</span>     → <a href="mailto:rajuaravinds@hotmail.com">rajuaravinds@hotmail.com</a>
+<span class="m">Available for SIEM / detection-engineering freelance work.</span>`)},
+async scan(){busy=true;const steps=['Querying index=main earliest=-24h …','Correlating with MITRE ATT&CK …','Checking EDR telemetry (Falcon) …','Hunting lateral movement (4624 / 4648) …','Enriching with threat intel …'];
+  for(const s of steps){await type('<span class="m">[*]</span> '+s,8);await sleep(220)}
+  line(`<div class="card alert"><span class="r">[!] 1 finding</span>: recruiter spotted reading this terminal.
+    Recommended action: <span class="c">contact</span></div>`);busy=false},
+clear(){out.innerHTML=''},
+sudo(){line('<span class="r">aravind is not in the sudoers file. This incident will be reported. :)</span>')},
+ls(){line('<span class="c">about  skills  experience  projects  certs  contact</span>')},
+exit(){line('<span class="m">nice try. there is no escape from the SOC.</span>')},
+};
+C['cat']=C.about;C['history']=()=>line(hist.map((h,i)=>`  ${i+1}  ${h}`).join('\n')||'<span class="m">empty</span>');
+
+
+/* ---------- chat relay → email (Formspree) ---------- */
+// 1) Create a free form at https://formspree.io  2) paste its ID below (the part after /f/)
+const FORMSPREE_ID='mkjrzkne';
+let chatMode=false,chatStep=null,visitor={name:'',email:''},lastSent=0,sentCount=0;
+const ps=document.querySelector('.inrow .ps');
+const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const MAX_MSGS=25,COOLDOWN=4000;
+function setPrompt(p,ph){ps.textContent=p;inp.placeholder=ph}
+function startChat(){
+  if(!FORMSPREE_ID||FORMSPREE_ID==='YOUR_FORM_ID'){line('<span class="r">chat: relay not configured yet.</span> Use <span class="c">contact</span> for now.');return}
+  chatMode=true;
+  line(`<div class="card"><span class="p">[ opening secure channel to Aravind ]</span>
+Your messages go straight to my inbox and I'll reply by email.
+Type <span class="c">exit</span> anytime to return to the shell.</div>`);
+  if(visitor.name&&visitor.email){chatStep='msg';line(`<span class="p">aravind&gt;</span> Welcome back, ${esc(visitor.name)}. What's on your mind?`);setPrompt(visitor.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g,'')+'@chat:~$','type your message…');return}
+  chatStep='name';line('<span class="p">aravind&gt;</span> Hey! Before we start — what\'s your name?');setPrompt('name:','your name');
+}
+function endChat(){chatMode=false;chatStep=null;setPrompt('aravind@soc:~$',"type 'help' and press enter");line('<span class="m">[ channel closed ]</span>')}
+async function relay(message){
+  const r=await fetch('https://formspree.io/f/'+FORMSPREE_ID,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({name:visitor.name,email:visitor.email,_replyto:visitor.email,_subject:'[Portfolio chat] '+visitor.name,message,page:location.href,sent_at:new Date().toISOString()})});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+}
+async function chatSend(msg){
+  const m=msg.trim();
+  if(/^(exit|quit|bye)$/i.test(m)){line(`<span class="c">&gt;</span> ${esc(m)}`);endChat();return}
+  if(chatStep==='name'){
+    line(`<span class="c">name&gt;</span> <span class="w">${esc(m)}</span>`);
+    if(m.length<2||m.length>60){line('<span class="r">aravind&gt; Hmm, that doesn\'t look like a name. Try again?</span>');return}
+    visitor.name=m;chatStep='email';
+    line(`<span class="p">aravind&gt;</span> Nice to meet you, ${esc(m)}. What's your email so I can reply?`);setPrompt('email:','you@example.com');return}
+  if(chatStep==='email'){
+    line(`<span class="c">email&gt;</span> <span class="w">${esc(m)}</span>`);
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(m)||m.length>120){line('<span class="r">aravind&gt; That email doesn\'t look right — double-check it?</span>');return}
+    visitor.email=m;chatStep='msg';
+    line(`<span class="p">aravind&gt;</span> Got it. Go ahead — ask me anything or tell me what you're working on.`);
+    setPrompt(visitor.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g,'')+'@chat:~$','type your message…');return}
+  // message step
+  line(`<span class="c">you&gt;</span> <span class="w">${esc(m)}</span>`);
+  if(m.length>2000){line('<span class="r">[!] message too long (2000 chars max)</span>');return}
+  if(sentCount>=MAX_MSGS){line('<span class="a">[!] message limit reached for this session — email me directly via contact.</span>');return}
+  const wait=COOLDOWN-(Date.now()-lastSent);
+  if(wait>0){line(`<span class="a">[!] slow down a sec — try again in ${Math.ceil(wait/1000)}s :)</span>`);return}
+  const d=line('<span class="m">[*] encrypting &amp; transmitting… <span class="blink">▋</span></span>');busy=true;
+  try{await relay(m);lastSent=Date.now();sentCount++;
+    d.innerHTML='<span class="p">[✔] delivered</span> <span class="m">— I\'ll get back to you at '+esc(visitor.email)+'</span>';
+    if(sentCount===1)line('<span class="p">aravind&gt;</span> Thanks! Got your message. Feel free to keep typing, or <span class="c">exit</span> to look around.');
+  }catch(e){d.innerHTML='<span class="r">[✘] transmission failed.</span> Try again, or use <span class="c">contact</span>.'}
+  finally{busy=false}
+}
+C.chat=startChat;
+async function run(raw){
+  const cmd=raw.trim();line(`<span class="p">aravind@soc:~$</span> <span class="w">${cmd.replace(/</g,'&lt;')}</span>`);
+  if(!cmd)return;hist.push(cmd);hi=hist.length;
+  const k=cmd.toLowerCase().split(/\s+/)[0];
+  if(C[k]) await C[k](); else line(`<span class="r">zsh: command not found: ${k.replace(/</g,'&lt;')}</span> — try <span class="c">help</span>`);
+}
+inp.addEventListener('keydown',async e=>{
+  if(e.key==='Enter'&&!busy){const v=inp.value;inp.value='';if(chatMode){if(v.trim())await chatSend(v)}else await run(v)}
+  else if(e.key==='ArrowUp'){if(hi>0){hi--;inp.value=hist[hi]}e.preventDefault()}
+  else if(e.key==='ArrowDown'){if(hi<hist.length-1){hi++;inp.value=hist[hi]}else{hi=hist.length;inp.value=''}e.preventDefault()}
+  else if(e.key==='Tab'){e.preventDefault();const m=Object.keys(C).filter(c=>c.startsWith(inp.value.toLowerCase()));if(m.length===1)inp.value=m[0];else if(m.length)line('<span class="m">'+m.join('  ')+'</span>')}
+});
+document.querySelector('.win').addEventListener('click',e=>{if(!e.target.closest('a,.chip')&&!window.getSelection().toString())inp.focus()});
+const chips=document.getElementById('chips');
+['whoami','about','experience','skills','projects','certs','education','chat','contact','help'].forEach(c=>{const b=document.createElement('button');b.className='chip';b.textContent=c;b.onclick=async()=>{if(busy)return;if(chatMode)endChat();await run(c)};chips.appendChild(b)});
+
+/* ---------- boot ---------- */
+(async()=>{busy=true;
+  const boot=['[  OK  ] Mounting /dev/detections','[  OK  ] Starting splunkd …','[  OK  ] Connecting to Falcon NG-SIEM','[  OK  ] Loading Sentinel analytics rules','[  OK  ] MITRE ATT&CK matrix synced','[ INFO ] Establishing secure session (TLS 1.3)'];
+  for(const b of boot){line('<span class="m">'+b.replace('[  OK  ]','<span class="p">[  OK  ]</span>').replace('[ INFO ]','<span class="c">[ INFO ]</span>')+'</span>');await sleep(160)}
+  await sleep(250);line(BANNER,'banner');
+  await type('<span class="p glow">&gt; Access granted. Welcome to Aravind\'s SOC console.</span>',14);
+  await type('<span class="m">Cybersecurity Analyst L3 · Detection &amp; Response · EirGrid · Ireland</span>',8);
+  line('');line('Type <span class="c">help</span> or tap a command below to start hunting.');
+  busy=false;inp.focus();
+})();
+</script>
+</body>
+</html>
