@@ -14,6 +14,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:14px;overflow:hidden}
 canvas#rain{position:fixed;inset:0;z-index:0;opacity:.45}
+canvas#msgrain{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:.6}
 .crt::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:5;
   background:repeating-linear-gradient(0deg,rgba(0,0,0,.25) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
 .wrap{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;max-width:980px;margin:0 auto;padding:18px}
@@ -56,6 +57,7 @@ a:hover{color:#fff}
 </head>
 <body class="crt">
 <canvas id="rain"></canvas>
+<canvas id="msgrain"></canvas>
 <div class="wrap">
   <div class="win">
     <div class="bar">
@@ -79,17 +81,21 @@ a:hover{color:#fff}
 <script>
 /* ---------- matrix rain ---------- */
 const cv=document.getElementById('rain'),cx=cv.getContext('2d');let cols,drops;
-const MSGS=['HEY JHALS',"IF YOU'RE LOOKING INTO THIS, I GOT SOMETHING FOR YOU"];let msgCol=[],msgNext=0;
-function rs(){cv.width=innerWidth;cv.height=innerHeight;cols=Math.floor(cv.width/14);drops=Array(cols).fill(0).map(()=>Math.random()*-50);msgCol=Array(cols).fill(null)}
+const MSGS=['HEY JHALS',"IF YOU'RE LOOKING INTO THIS, I GOT SOMETHING FOR YOU"];let msgNext=0,active=null;
+const cv2=document.getElementById('msgrain'),cx2=cv2.getContext('2d');
+function rs(){cv.width=cv2.width=innerWidth;cv.height=cv2.height=innerHeight;cols=Math.floor(cv.width/14);drops=Array(cols).fill(0).map(()=>Math.random()*-50)}
 rs();addEventListener('resize',rs);
 const glyphs='01アイウエオカキクケコサシスセソ<>/{}[]#$%SPLCQLKQL';
-setInterval(()=>{cx.fillStyle='rgba(5,8,10,.12)';cx.fillRect(0,0,cv.width,cv.height);cx.font='13px JetBrains Mono';
- drops.forEach((y,i)=>{let ch=null,col='#4a4f55';const m=msgCol[i];
-  if(m){const k=Math.floor(y);if(k>=0&&k<m.length){ch=m[k];col='#9aa3ab'}else if(k>=m.length)msgCol[i]=null}
-  if(ch===null)ch=glyphs[Math.random()*glyphs.length|0];
-  if(ch!==' '){cx.fillStyle=col;cx.fillText(ch,i*14,y*14)}
-  if(y*14>cv.height&&Math.random()>.975){drops[i]=0;if(!msgCol.some(Boolean)&&Math.random()<.02){msgCol[i]=MSGS[msgNext];msgNext=(msgNext+1)%MSGS.length}}
-  else drops[i]=y+1})},55);
+function spawnMsg(){const r=document.querySelector('.win').getBoundingClientRect();const all=[...Array(cols).keys()];
+  const side=all.filter(i=>i*14+14<r.left-4||i*14>r.right+4);const pool=side.length?side:all;
+  active={i:pool[Math.random()*pool.length|0],y:1,t:MSGS[msgNext]};msgNext=(msgNext+1)%MSGS.length}
+setTimeout(spawnMsg,4000);
+setInterval(()=>{cx.fillStyle='rgba(5,8,10,.12)';cx.fillRect(0,0,cv.width,cv.height);cx.font='13px JetBrains Mono';cx.fillStyle='#4a4f55';
+ drops.forEach((y,i)=>{cx.fillText(glyphs[Math.random()*glyphs.length|0],i*14,y*14);drops[i]=(y*14>cv.height&&Math.random()>.975)?0:y+1});
+ cx2.globalCompositeOperation='destination-out';cx2.fillStyle='rgba(0,0,0,.08)';cx2.fillRect(0,0,cv2.width,cv2.height);cx2.globalCompositeOperation='source-over';
+ if(active){const ch=active.t[active.y-1];if(ch!==' '){cx2.font='bold 13px JetBrains Mono';cx2.fillStyle='#c3cad1';cx2.fillText(ch,active.i*14,active.y*14)}
+  active.y++;if(active.y>active.t.length){active=null;setTimeout(spawnMsg,12000+Math.random()*8000)}}
+},55);
 
 /* ---------- clock + detection counter ---------- */
 setInterval(()=>{document.getElementById('clock').textContent='UTC '+new Date().toISOString().slice(11,19)},1000);
