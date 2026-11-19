@@ -52,6 +52,25 @@ a:hover{color:#fff}
 #jpop h2{font-size:clamp(22px,5vw,38px);color:var(--green);text-shadow:0 0 14px rgba(57,255,136,.6);font-weight:800}
 #jpop p{margin-top:14px;color:var(--text);font-size:15px}
 #jpop button{margin-top:22px;background:#0b1a12;border:1px solid #1f5a3a;color:var(--green);font:inherit;font-size:12px;padding:6px 14px;border-radius:6px;cursor:pointer}
+.viz{white-space:normal;margin:4px 0 8px}
+.vgrid{display:grid;grid-template-columns:minmax(220px,320px) 1fr;gap:12px}
+.vbox{border:1px solid #163b28;border-radius:6px;padding:10px 12px;background:rgba(57,255,136,.02)}
+.vt{color:var(--amber);font-size:12px;margin-bottom:6px}
+.radar{width:100%;max-width:320px;display:block;margin:auto}
+.rd{transform-origin:140px 140px;transform:scale(0);transition:transform 1.1s cubic-bezier(.2,.9,.3,1.1)}
+.on .rd{transform:scale(1)}
+.sb,.tlr{display:grid;grid-template-columns:150px 1fr 30px;gap:8px;align-items:center;margin:6px 0;font-size:12px}
+.tlr{grid-template-columns:150px 1fr}
+.sb b{color:var(--green);font-weight:600;text-align:right}
+.tr{height:8px;background:#0b1a12;border:1px solid #163b28;border-radius:4px;overflow:hidden}
+.tr i{display:block;height:100%;width:0;background:linear-gradient(90deg,#1f8a52,#39ff88);box-shadow:0 0 8px rgba(57,255,136,.5);transition:width 1.2s ease}
+.on .tr i{width:var(--w)}
+.tlt{position:relative;height:8px;background:#0b1a12;border:1px solid #163b28;border-radius:4px}
+.tlt i{position:absolute;top:-1px;bottom:-1px;width:0;background:linear-gradient(90deg,#2a8fb0,#4fd8ff);border-radius:4px;box-shadow:0 0 8px rgba(79,216,255,.45);transition:width 1.3s ease .4s}
+.on .tlt i{width:var(--w)}
+.tly{position:relative;height:14px;font-size:10px;color:var(--muted)}
+.tly em{position:absolute;transform:translateX(-50%);font-style:normal}
+@media (max-width:600px){.vgrid{grid-template-columns:1fr}.sb,.tlr{grid-template-columns:128px 1fr 26px;font-size:11px;gap:6px}.tlr{grid-template-columns:128px 1fr}.sb span,.tlr span{white-space:nowrap}}
 @media (max-width:600px){html,body{font-size:12.5px}.wrap{padding:8px}.status{display:none}}
 </style>
 </head>
@@ -118,6 +137,19 @@ const BANNER=`
 ██║  ██║██║  ██║╚█████╔╝╚██████╔╝██║  ██║██║  ██║██║  ██║ ╚████╔╝ ██║██║ ╚████║██████╔╝    ███████║██║  ██║██║ ╚████║██║  ██╗██║  ██║██║  ██║
 ╚═╝  ╚═╝╚═╝  ╚═╝ ╚════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  ╚═╝╚═╝  ╚═══╝╚═════╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝`;
 
+const RADAR=[['Detection Eng.',9.5],['SIEM Engineering',9.5],['Data Onboarding',9],['Threat Hunting',8],['Incident Response',8],['Threat Intel',8],['Automation',7.5],['Cloud & Infra',6.5]];
+function radarSVG(){const n=RADAR.length,c=140,R=92;const pt=(i,v)=>{const a=-Math.PI/2+i*2*Math.PI/n;return [(c+Math.cos(a)*R*v/10).toFixed(1),(c+Math.sin(a)*R*v/10).toFixed(1)]};let g='';
+  for(const k of [2.5,5,7.5,10])g+=`<polygon points="${RADAR.map((_,i)=>pt(i,k).join(',')).join(' ')}" fill="none" stroke="#163b28"/>`;
+  RADAR.forEach((d,i)=>{const [x,y]=pt(i,10),[lx,ly]=pt(i,11.2),an=lx>c+5?'start':lx<c-5?'end':'middle';g+=`<line x1="${c}" y1="${c}" x2="${x}" y2="${y}" stroke="#163b28"/><text x="${lx}" y="${ly}" text-anchor="${an}" dominant-baseline="middle" fill="#8fb3a0" font-size="10" font-family="JetBrains Mono,monospace">${d[0].replace('&','&amp;')}</text>`});
+  g+=`<g class="rd"><polygon points="${RADAR.map((d,i)=>pt(i,d[1]).join(',')).join(' ')}" fill="rgba(57,255,136,.16)" stroke="#39ff88" stroke-width="1.5"/>${RADAR.map((d,i)=>{const [x,y]=pt(i,d[1]);return `<circle cx="${x}" cy="${y}" r="2.6" fill="#39ff88"><title>${d[0]}: ${d[1]}/10</title></circle>`}).join('')}</g>`;
+  return `<svg viewBox="-62 0 404 280" class="radar" role="img" aria-label="Skills radar">${g}</svg>`}
+const PLAT=[['Splunk',9.5],['CrowdStrike NG-SIEM',8.8],['Microsoft Sentinel',8],['Defender XDR',7.5],['Cribl Stream',7]];
+function platBars(){return PLAT.map(([n,v])=>`<div class="sb"><span>${n}</span><div class="tr"><i style="--w:${v*10}%"></i></div><b>${v}</b></div>`).join('')}
+const TL=[['Splunk',2022.33],['Detection & hunting',2022.33],['Microsoft Sentinel',2025],['CrowdStrike NG-SIEM',2025],['Defender XDR',2025]];
+function timeline(){const y0=2022,y1=2027,now=2026.9,p=y=>((y-y0)/(y1-y0)*100).toFixed(1);
+  return TL.map(([n,a])=>`<div class="tlr"><span>${n.replace('&','&amp;')}</span><div class="tlt"><i style="left:${p(a)}%;--w:${(p(now)-p(a)).toFixed(1)}%"></i></div></div>`).join('')+
+  `<div class="tlr"><span></span><div class="tly">${[2022,2023,2024,2025,2026].map(y=>`<em style="left:${p(y+.5)}%">${y}</em>`).join('')}</div></div>`}
+
 const C={
 help(){line(`<span class="sec">AVAILABLE COMMANDS</span>
   <span class="c">whoami</span>       who is behind the console
@@ -148,13 +180,7 @@ integrating threat intel, automating reporting and creating dashboards that
 make a SOC faster and sharper. Grounded in <span class="c">MITRE ATT&amp;CK</span>, <span class="c">NIST</span> and <span class="c">CIS</span>.
 
 Originally from Chennai, now based in Ireland. 🏆 TCS Rising Star Award, Nov 2025.</div>`)},
-skills(){line(`<span class="sec">// SIEM &amp; SECURITY PLATFORMS</span>
-  Splunk (SPL, admin, apps)     ${bar(19)}
-  CrowdStrike Falcon NG-SIEM    ${bar(17)}
-  Microsoft Sentinel            ${bar(15)}
-  Defender XDR                  ${bar(14)}
-  Cribl Stream                  ${bar(13)}
-<span class="sec">// Detection &amp; Monitoring</span>
+skills(){const d=line(`<div class="viz"><div class="vgrid"><div class="vbox"><div class="vt">// capability radar</div>${radarSVG()}</div><div class="vbox"><div class="vt">// platform depth</div>${platBars()}<div class="vt" style="margin-top:14px">// hands-on timeline</div>${timeline()}</div></div><span class="m" style="font-size:11px">self-assessed · scale 0–10</span></div><span class="sec">// Detection &amp; Monitoring</span>
   <span class="tag">Detection Engineering</span><span class="tag">Use Case Development</span><span class="tag">Alert Tuning</span><span class="tag">False Positive Reduction</span><span class="tag">Splunk MLTK / UEBA</span>
 <span class="sec">// Threat Hunting &amp; Intel</span>
   <span class="tag">Proactive Hunting</span><span class="tag">IOC Analysis</span><span class="tag">Threat Intel Integration</span><span class="tag">VirusTotal</span>
@@ -163,7 +189,10 @@ skills(){line(`<span class="sec">// SIEM &amp; SECURITY PLATFORMS</span>
 <span class="sec">// Data &amp; Infrastructure</span>
   <span class="tag">Parsing &amp; RegEx Extraction</span><span class="tag">Normalisation / CIM</span><span class="tag">Data Routing &amp; Filtering</span><span class="tag">Linux</span><span class="tag">AWS</span><span class="tag">Azure</span><span class="tag">Hybrid / Multi-site</span>
 <span class="sec">// Frameworks</span>
-  <span class="tag">MITRE ATT&amp;CK</span><span class="tag">NIST</span><span class="tag">CIS Controls</span>`)},
+  <span class="tag">MITRE ATT&amp;CK</span><span class="tag">NIST</span><span class="tag">CIS Controls</span>
+<span class="sec">// Delivery &amp; Documentation</span>
+  <span class="tag">SOPs</span><span class="tag">Technical Documentation</span><span class="tag">Design Documents</span><span class="tag">Operational Procedures</span>`);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>d.classList.add('on')))},
 experience(){line(`<div class="card"><span class="w">Cybersecurity Analyst L3 — Detection &amp; Response</span> — <span class="c">EirGrid</span>   <span class="m">Present · Ireland</span>
  ▸ Senior (L3) detection &amp; response: threat detection, investigation and response
    for Ireland's electricity transmission system operator</div><div class="card"><span class="w">SOC Engineer</span> — <span class="c">Tata Consultancy Services</span>   <span class="m">Jan 2025 – 2026 · Letterkenny, IE</span>
@@ -174,14 +203,20 @@ experience(){line(`<div class="card"><span class="w">Cybersecurity Analyst L3 �
  ▸ Threat-intel correlation with firewall traffic and Falcon IDP rules
  ▸ Automated alert version control in Splunk + monthly triggered/non-triggered report
  ▸ Dashboards for TI, data gaps, latency and pipeline health
- ▸ Third-party data source integrations in NG-SIEM; SOC response plans</div><div class="card"><span class="w">Freelancer</span> — <span class="c">Fiverr</span>   <span class="m">Jun 2024 – Dec 2024</span>
+ ▸ Third-party data source integrations in NG-SIEM; SOC response plans
+ ▸ Threat-hunting rules + tuned TI feeds for proactive, contextual alerting
+ ▸ Optimised detection queries &amp; accelerated data models for faster analysis
+ ▸ HA SIEM architecture across distributed on-prem &amp; cloud-connected sites
+ ▸ Incident reviews to refine detections; SOPs &amp; technical documentation</div><div class="card"><span class="w">Freelancer</span> — <span class="c">Fiverr</span>   <span class="m">Jun 2024 – Dec 2024</span>
  ▸ Custom Splunk apps with API integrations for real-time security insights
  ▸ Breach-data intelligence &amp; exposed-email monitoring tools for clients
  ▸ High-fidelity detection rules, dashboards and data pipelines</div><div class="card"><span class="w">Junior Analyst</span> — <span class="c">Positka</span>   <span class="m">May 2022 – Aug 2023 · Chennai, IN</span>
  ▸ Built &amp; managed distributed and standalone Splunk (SHC / indexer clusters)
  ▸ ML-based detections with Splunk MLTK; VirusTotal TI integration
  ▸ Custom apps: AWS Bill Monitoring, Transaction Monitoring
- ▸ DB Connect ingestion, CIM normalisation, RegEx field extraction</div><div class="card"><span class="w">Cybersecurity Trainer</span> — <span class="c">Zybeak Technologies</span>   <span class="m">Apr 2022 – Jul 2022 · Chennai, IN</span>
+ ▸ DB Connect ingestion, CIM normalisation, RegEx field extraction
+ ▸ SPL dashboards, reports &amp; saved searches; license, indexing &amp; forwarder tuning
+ ▸ Supported investigations through log analysis and threat hunting</div><div class="card"><span class="w">Cybersecurity Trainer</span> — <span class="c">Zybeak Technologies</span>   <span class="m">Apr 2022 – Jul 2022 · Chennai, IN</span>
  ▸ Taught networking, Linux &amp; Windows fundamentals
  ▸ Guided learners through TryHackMe and HackTheBox challenges</div>`)},
 education(){line(`<div class="card"><span class="w">MSc Cybersecurity</span> — <span class="c">National College of Ireland</span>, Dublin
