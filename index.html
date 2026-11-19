@@ -43,6 +43,14 @@ a:hover{color:#fff}
 .card{border:1px solid #1d4a32;border-left:3px solid var(--green);padding:8px 12px;margin:6px 0;border-radius:4px;background:rgba(57,255,136,.03)}
 .alert{border-left-color:var(--red);background:rgba(255,84,104,.05)}
 .tag{display:inline-block;border:1px solid #275a40;color:var(--cyan);padding:0 6px;border-radius:3px;margin:2px 4px 2px 0;font-size:12px}
+#jpop{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:rgba(2,4,6,.72);backdrop-filter:blur(4px)}
+#jpop.show{display:flex;animation:jin .5s ease}
+@keyframes jin{from{opacity:0}to{opacity:1}}
+#jpop .box{border:1px solid var(--green);border-radius:12px;background:#071009;padding:34px 40px;text-align:center;max-width:90vw;box-shadow:0 0 60px rgba(57,255,136,.25);animation:jup .6s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes jup{from{transform:scale(.85)}to{transform:scale(1)}}
+#jpop h2{font-size:clamp(22px,5vw,38px);color:var(--green);text-shadow:0 0 14px rgba(57,255,136,.6);font-weight:800}
+#jpop p{margin-top:14px;color:var(--text);font-size:15px}
+#jpop button{margin-top:22px;background:#0b1a12;border:1px solid #1f5a3a;color:var(--green);font:inherit;font-size:12px;padding:6px 14px;border-radius:6px;cursor:pointer}
 @media (max-width:600px){html,body{font-size:12.5px}.wrap{padding:8px}.status{display:none}}
 </style>
 </head>
@@ -65,6 +73,8 @@ a:hover{color:#fff}
     </div>
   </div>
 </div>
+
+<div id="jpop" role="dialog" aria-modal="true"><div class="box"><h2>Welcome Jhals :)</h2><p>glad you're here.</p><button id="jclose">close</button></div></div>
 
 <script>
 /* ---------- matrix rain ---------- */
@@ -263,6 +273,43 @@ async function chatSend(msg){
   finally{busy=false}
 }
 C.chat=startChat;
+
+/* ---------- jhals (restricted) ---------- */
+const J_HASH='7e9209b2723ab4f74bae6d924c096aa23ad8990bf59bfb8ae7f96155e2e28a3b';
+const MONTHS=['january','february','march','april','may','june','july','august','september','october','november','december'];
+let dobMode=false,dobTries=0;
+async function sha(t){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)))).map(b=>b.toString(16).padStart(2,'0')).join('')}
+function parseDob(t){const m=t.trim().toLowerCase().replace(/[,.]/g,' ').replace(/\s+/g,' ').match(/^(\d{1,2})(?:st|nd|rd|th)? ([a-z]+) (\d{4})$/);if(!m)return null;
+  const mi=MONTHS.findIndex(x=>x===m[2]||(m[2].length>=3&&x.startsWith(m[2])));if(mi<0)return null;
+  return m[3]+'-'+String(mi+1).padStart(2,'0')+'-'+String(+m[1]).padStart(2,'0')}
+function jhals(){
+  if(dobTries>=5){line('<span class="r">[ LOCKED ] too many failed attempts. Come back later.</span>');return}
+  line(`<div class="card alert"><span class="r">[ RESTRICTED ]</span> Only J can access this one.</div><span class="a">Enter your DOB</span> <span class="m">(format: date month year, e.g. 08 June 2000)</span>`);
+  dobMode=true;setPrompt('dob:','DD Month YYYY');
+}
+function endDob(){dobMode=false;setPrompt('aravind@soc:~$',"type 'help' and press enter")}
+async function dobCheck(v){
+  const t=v.trim();line(`<span class="c">dob&gt;</span> <span class="w">${esc(t.replace(/\S/g,'•'))}</span>`);
+  if(/^(exit|quit)$/i.test(t)){endDob();line('<span class="m">[ aborted ]</span>');return}
+  const d=parseDob(t);
+  if(!d){line('<span class="a">[!] format: date month year — e.g. 08 June 2000</span>');return}
+  busy=true;line('<span class="m">[*] verifying identity…</span>');await sleep(700);busy=false;
+  if(await sha('jhals|'+d)===J_HASH){
+    endDob();line('<span class="p">[✔] identity confirmed. access granted.</span>');
+    document.getElementById('jpop').classList.add('show');
+    try{fetch('https://formspree.io/f/'+FORMSPREE_ID,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({_subject:'[Portfolio] Jhals unlocked the secret :)',message:'The jhals command was unlocked with the correct DOB on your site.',page:location.href,unlocked_at:new Date().toISOString(),device:navigator.userAgent})})}catch(e){}
+  }else{
+    dobTries++;
+    if(dobTries>=5){endDob();line('<span class="r">[✘] access denied. terminal locked for this session.</span>')}
+    else line(`<span class="r">[✘] access denied.</span> <span class="m">${5-dobTries} attempt${5-dobTries>1?'s':''} left — or type exit</span>`);
+  }
+}
+function closeJ(){document.getElementById('jpop').classList.remove('show');inp.focus()}
+document.getElementById('jclose').onclick=closeJ;
+document.getElementById('jpop').addEventListener('click',e=>{if(e.target.id==='jpop')closeJ()});
+addEventListener('keydown',e=>{if(e.key==='Escape')closeJ()});
+C.jhals=jhals;
 async function run(raw){
   const cmd=raw.trim();line(`<span class="p">aravind@soc:~$</span> <span class="w">${cmd.replace(/</g,'&lt;')}</span>`);
   if(!cmd)return;hist.push(cmd);hi=hist.length;
@@ -270,14 +317,14 @@ async function run(raw){
   if(C[k]) await C[k](); else line(`<span class="r">zsh: command not found: ${k.replace(/</g,'&lt;')}</span> — try <span class="c">help</span>`);
 }
 inp.addEventListener('keydown',async e=>{
-  if(e.key==='Enter'&&!busy){const v=inp.value;inp.value='';if(chatMode){if(v.trim())await chatSend(v)}else await run(v)}
+  if(e.key==='Enter'&&!busy){const v=inp.value;inp.value='';if(dobMode){if(v.trim())await dobCheck(v)}else if(chatMode){if(v.trim())await chatSend(v)}else await run(v)}
   else if(e.key==='ArrowUp'){if(hi>0){hi--;inp.value=hist[hi]}e.preventDefault()}
   else if(e.key==='ArrowDown'){if(hi<hist.length-1){hi++;inp.value=hist[hi]}else{hi=hist.length;inp.value=''}e.preventDefault()}
-  else if(e.key==='Tab'){e.preventDefault();const m=Object.keys(C).filter(c=>c.startsWith(inp.value.toLowerCase()));if(m.length===1)inp.value=m[0];else if(m.length)line('<span class="m">'+m.join('  ')+'</span>')}
+  else if(e.key==='Tab'){e.preventDefault();const m=Object.keys(C).filter(c=>c!=='jhals'&&c.startsWith(inp.value.toLowerCase()));if(m.length===1)inp.value=m[0];else if(m.length)line('<span class="m">'+m.join('  ')+'</span>')}
 });
 document.querySelector('.win').addEventListener('click',e=>{if(!e.target.closest('a,.chip')&&!window.getSelection().toString())inp.focus()});
 const chips=document.getElementById('chips');
-['whoami','about','experience','skills','projects','certs','education','chat','contact','help'].forEach(c=>{const b=document.createElement('button');b.className='chip';b.textContent=c;b.onclick=async()=>{if(busy)return;if(chatMode)endChat();await run(c)};chips.appendChild(b)});
+['whoami','about','experience','skills','projects','certs','education','chat','contact','help'].forEach(c=>{const b=document.createElement('button');b.className='chip';b.textContent=c;b.onclick=async()=>{if(busy)return;if(chatMode)endChat();if(dobMode)endDob();await run(c)};chips.appendChild(b)});
 
 /* ---------- boot ---------- */
 (async()=>{busy=true;
